@@ -1,0 +1,60 @@
+/* Custom Styles */
+
+body {
+    font-family: Arial, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+#colorChart svg,
+#compositionChart svg {
+    max-width: 100%;
+    height: auto;
+}
+
+#colorLegend ul {
+    columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2;
+}
+
+#colorLegend li {
+    margin-bottom: 5px;
+}
+
+#colorLegend span {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.tooltip {
+    position: absolute;
+    display: none;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ddd;
+    padding: 10px;
+    pointer-events: none;
+    z-index: 1000;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+#colorDetails,
+#sampleDetails {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.bar {
+    fill: #69b3a2;
+}
+
+.bar:hover {
+    fill: #40a3a1;
+}
