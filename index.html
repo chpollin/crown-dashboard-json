@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Crown Research Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Navigation Bar with only the existing links -->
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="index.html">Crown Dashboard</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
-                aria-label="Toggle navigation" >
+                aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
         </div>
@@ -22,64 +25,43 @@
     <!-- Main Content -->
     <div class="container mt-5">
         <h1 class="text-center mb-4">Welcome to the Crown Research Dashboard</h1>
-        
+
         <!-- Crown Logo -->
         <div class="text-center mb-4">
             <img src="images/crown-logo.png" alt="Crown Research Logo" class="img-fluid" style="max-width: 200px;">
         </div>
 
-        <!-- Key Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Total Samples</h5>
-                        <p class="card-text" id="totalSamples">Loading...</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Unique Colors</h5>
-                        <p class="card-text" id="uniqueColors">Loading...</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Most Common Color</h5>
-                        <p class="card-text" id="commonColor">Loading...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Key Statistics (Optional) -->
+        <!-- You can add key statistics here if needed -->
 
         <!-- Cards Linking to Views -->
         <div class="row">
-            <!-- Existing Cards -->
+            <!-- Enamel Colors Card -->
             <div class="col-md-6">
-                <div class="card">
+                <div class="card mb-4">
+                    <img src="images/enamel-colors.jpg" class="card-img-top" alt="Enamel Colors">
                     <div class="card-body">
-                        <h5 class="card-title">Enamel Color Explorer</h5>
-                        <p class="card-text">Explore the distribution of enamel colors used in the crown.</p>
-                        <a href="enamel-color-explorer.html" class="btn btn-primary">Go to Enamel Color Explorer</a>
+                        <h5 class="card-title">Enamel Colors</h5>
+                        <p class="card-text">Explore the variety and distribution of enamel colors used in the crown.</p>
+                        <a href="enamel-colors.html" class="btn btn-primary">Go to Enamel Colors</a>
                     </div>
                 </div>
             </div>
+            <!-- Enamel Composition Analyzer Card -->
             <div class="col-md-6">
-                <div class="card">
+                <div class="card mb-4">
+                    <img src="images/enamel-composition.jpg" class="card-img-top" alt="Enamel Composition">
                     <div class="card-body">
                         <h5 class="card-title">Enamel Composition Analyzer</h5>
-                        <p class="card-text">Analyze the composition of different enamel samples.</p>
+                        <p class="card-text">Analyze the chemical composition of different enamel samples.</p>
                         <a href="enamel-composition-analyzer.html" class="btn btn-primary">Go to Enamel Composition Analyzer</a>
                     </div>
                 </div>
             </div>
-            <!-- New Cards -->
+            <!-- Enamel Degradation Tracker Card -->
             <div class="col-md-6">
-                <div class="card mt-4">
+                <div class="card mb-4">
+                    <img src="images/enamel-degradation.jpg" class="card-img-top" alt="Enamel Degradation">
                     <div class="card-body">
                         <h5 class="card-title">Enamel Degradation Tracker</h5>
                         <p class="card-text">Track and compare FORS spectra of enamel samples over time.</p>
@@ -87,18 +69,21 @@
                     </div>
                 </div>
             </div>
+            <!-- Setting Type Timeline Card -->
             <div class="col-md-6">
-                <div class="card mt-4">
+                <div class="card mb-4">
+                    <img src="images/setting-type-timeline.jpg" class="card-img-top" alt="Setting Type Timeline">
                     <div class="card-body">
                         <h5 class="card-title">Setting Type Timeline</h5>
-                        <p class="card-text">View a timeline of setting types used in the crown to understand craftsmanship evolution.</p>
+                        <p class="card-text">View a timeline of setting types to understand craftsmanship evolution.</p>
                         <a href="setting-type-timeline.html" class="btn btn-primary">Go to Setting Type Timeline</a>
                     </div>
                 </div>
             </div>
-            <!-- Continue adding cards for other views -->
+            <!-- Intervention Impact Visualizer Card -->
             <div class="col-md-6">
-                <div class="card mt-4">
+                <div class="card mb-4">
+                    <img src="images/intervention-impact.jpg" class="card-img-top" alt="Intervention Impact">
                     <div class="card-body">
                         <h5 class="card-title">Intervention Impact Visualizer</h5>
                         <p class="card-text">Visualize the impact of historical interventions on the crown's structure.</p>
@@ -106,8 +91,10 @@
                     </div>
                 </div>
             </div>
+            <!-- Fassung Comparison Tool Card -->
             <div class="col-md-6">
-                <div class="card mt-4">
+                <div class="card mb-4">
+                    <img src="images/fassung-comparison.jpg" class="card-img-top" alt="Fassung Comparison">
                     <div class="card-body">
                         <h5 class="card-title">Fassung Comparison Tool</h5>
                         <p class="card-text">Compare different types of settings across the crown.</p>
@@ -115,29 +102,10 @@
                     </div>
                 </div>
             </div>
-            <!-- Gemstone Distribution Map -->
+            <!-- Pearl Characteristic Analyzer Card -->
             <div class="col-md-6">
-                <div class="card mt-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Gemstone Distribution Map</h5>
-                        <p class="card-text">Explore the distribution and variety of gemstones on the crown.</p>
-                        <a href="gemstone-distribution-map.html" class="btn btn-primary">Go to Gemstone Distribution Map</a>
-                    </div>
-                </div>
-            </div>
-            <!-- Gemstone Origin Explorer -->
-            <div class="col-md-6">
-                <div class="card mt-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Gemstone Origin Explorer</h5>
-                        <p class="card-text">Visualize the potential origins of the crown's gemstones on a world map.</p>
-                        <a href="gemstone-origin-explorer.html" class="btn btn-primary">Go to Gemstone Origin Explorer</a>
-                    </div>
-                </div>
-            </div>
-            <!-- Pearl Characteristic Analyzer -->
-            <div class="col-md-6">
-                <div class="card mt-4">
+                <div class="card mb-4">
+                    <img src="images/pearl-characteristics.jpg" class="card-img-top" alt="Pearl Characteristics">
                     <div class="card-body">
                         <h5 class="card-title">Pearl Characteristic Analyzer</h5>
                         <p class="card-text">Catalog and analyze the characteristics of pearls used in the crown.</p>
@@ -145,13 +113,18 @@
                     </div>
                 </div>
             </div>
-            <!-- We exclude the views listed under 'no' -->
+            <!-- Additional cards can be added here -->
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Footer (Optional) -->
+    <footer class="bg-dark text-white text-center py-3">
+        &copy; 2023 Crown Research Dashboard
+    </footer>
+
+    <!-- JavaScript Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Custom JavaScript (Optional) -->
     <script src="js/index.js"></script>
 </body>
 </html>

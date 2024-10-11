@@ -58,3 +58,12 @@ body {
 .bar:hover {
     fill: #40a3a1;
 }
+
+.card img {
+    max-height: 150px;
+    object-fit: cover;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
