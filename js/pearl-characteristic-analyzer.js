@@ -240,7 +240,7 @@ function getImagePath(pearl) {
         // Remove 'Projekte\\CROWN\\CR_1_A\\' and replace backslashes with forward slashes
         const cleanedPath = pearl.Media[0].FileName.replace('Projekte\\CROWN\\CR_1_A\\', '').replace(/\\/g, '/');
         // Construct the final path
-        return `/assets/${cleanedPath}`;
+        return `assets/${cleanedPath}`;
     } else {
         return "images/placeholder.png";
     }
