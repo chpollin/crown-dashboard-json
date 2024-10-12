@@ -231,7 +231,7 @@ function formatMedia(media) {
 function getImagePath(item) {
     if (item && item.FileName) {
         const cleanedPath = item.FileName.replace('Projekte\\', '').replace('CROWN\\CR_1_B\\', '').replace(/\\/g, '/');
-        return `assets/${cleanedPath}`;
+        return `https://storage.googleapis.com/crown-dashboard/assets/${cleanedPath}`;
     } else {
         return "images/placeholder.png";
     }

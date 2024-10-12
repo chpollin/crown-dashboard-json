@@ -370,10 +370,11 @@ function createMediumTreemap() {
      * @param {Object} bild - A Bildquelle item.
      * @returns {string} The image path.
      */
+    // https://storage.googleapis.com/crown-dashboard/assets/CR_1_QB_Gr/Gr_1797-1919/CR_1_QB_Gr_1797-1919_005_heinrichiv.jpg
     function getImagePath(bild) {
         if (bild.Media && bild.Media.length > 0 && bild.Media[0].FileName) {
-            const cleanedPath = bild.Media[0].FileName.replace(/\\/g, '/');
-            return `assets/${cleanedPath}`;
+            const cleanedPath = bild.Media[0].FileName.replace('Projekte\\CROWN\\', '').replace(/\\/g, '/');
+            return `https://storage.googleapis.com/crown-dashboard/assets/${cleanedPath}`;
         }
         return "images/placeholder.png";
     }
