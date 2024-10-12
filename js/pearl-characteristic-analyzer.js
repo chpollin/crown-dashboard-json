@@ -9,7 +9,6 @@ let pearlData = [];
 let filteredPearlData = [];
 
 let forms = new Set();
-let surfaces = new Set();
 
 function loadData() {
     d3.json('data/crown_data.json')
@@ -24,7 +23,7 @@ function loadData() {
 }
 
 function handleError(error) {
-    console.error('Error loading data:', error);
+    console.error('Fehler beim Laden der Daten:', error);
     alert('Fehler beim Laden der Daten.');
 }
 
@@ -34,7 +33,6 @@ function processData(data) {
 
     // Initialize sets for filters
     forms = new Set();
-    surfaces = new Set();
 
     pearlData.forEach(pearl => {
         // Form
@@ -43,13 +41,6 @@ function processData(data) {
             : 'Unbekannt';
         pearl.form = form.trim();
         forms.add(pearl.form);
-
-        // Oberfläche
-        let surface = pearl.ConditionAttributes && pearl.ConditionAttributes.Oberfläche
-            ? pearl.ConditionAttributes.Oberfläche[""] || 'Unbekannt'
-            : 'Unbekannt';
-        pearl.surface = surface.trim();
-        surfaces.add(pearl.surface);
 
         // Riss
         let hasRiss = pearl.ConditionAttributes && pearl.ConditionAttributes.Riss
@@ -88,14 +79,6 @@ function populateFilters() {
             .text(form);
     });
 
-    // Oberfläche Filter
-    const surfaceFilter = d3.select('#surfaceFilter');
-    surfaces.forEach(surface => {
-        surfaceFilter.append('option')
-            .attr('value', surface)
-            .text(surface);
-    });
-
     // Event Listeners
     d3.selectAll('.form-select').on('change', applyFilters);
     d3.select('#resetFilters').on('click', resetFilters);
@@ -103,19 +86,19 @@ function populateFilters() {
 
 function applyFilters() {
     const selectedForm = d3.select('#formFilter').property('value');
-    const selectedSurface = d3.select('#surfaceFilter').property('value');
     const selectedRiss = d3.select('#rissFilter').property('value');
     const selectedKratzer = d3.select('#kratzerFilter').property('value');
     const selectedFehlstelle = d3.select('#fehlstelleFilter').property('value');
+    const selectedBohrloch = d3.select('#bohrlochFilter').property('value');
 
     filteredPearlData = pearlData.filter(pearl => {
         let formMatch = (selectedForm === 'all') || (pearl.form === selectedForm);
-        let surfaceMatch = (selectedSurface === 'all') || (pearl.surface === selectedSurface);
         let rissMatch = (selectedRiss === 'all') || ((pearl.hasRiss ? 'Ja' : 'Nein') === selectedRiss);
         let kratzerMatch = (selectedKratzer === 'all') || ((pearl.hasKratzer ? 'Ja' : 'Nein') === selectedKratzer);
         let fehlstelleMatch = (selectedFehlstelle === 'all') || ((pearl.hasFehlstelle ? 'Ja' : 'Nein') === selectedFehlstelle);
+        let bohrlochMatch = (selectedBohrloch === 'all') || ((pearl.hasBohrloch ? 'Ja' : 'Nein') === selectedBohrloch);
 
-        return formMatch && surfaceMatch && rissMatch && kratzerMatch && fehlstelleMatch;
+        return formMatch && rissMatch && kratzerMatch && fehlstelleMatch && bohrlochMatch;
     });
 
     displayPearlGallery();
@@ -123,10 +106,10 @@ function applyFilters() {
 
 function resetFilters() {
     d3.select('#formFilter').property('value', 'all');
-    d3.select('#surfaceFilter').property('value', 'all');
     d3.select('#rissFilter').property('value', 'all');
     d3.select('#kratzerFilter').property('value', 'all');
     d3.select('#fehlstelleFilter').property('value', 'all');
+    d3.select('#bohrlochFilter').property('value', 'all');
 
     applyFilters();
 }
@@ -210,7 +193,6 @@ function displayPearlGallery() {
         info.append('h5').text(pearl.ObjectName || 'Unbekannte Perle');
 
         info.append('p').html(`<strong>Form:</strong> ${pearl.form}`);
-        info.append('p').html(`<strong>Oberfläche:</strong> ${pearl.surface}`);
 
         // Represent Ja/Nein visually
         info.append('p').html(`<strong>Riss:</strong> ${formatStatus(pearl.hasRiss)}`);
@@ -225,8 +207,6 @@ function displayPearlGallery() {
         if (pearl.hasFehlstelle && pearl.ConditionAttributes.Fehlstelle.Beschreibung) {
             info.append('p').html(`<strong>Fehlstelle Beschreibung:</strong> ${pearl.ConditionAttributes.Fehlstelle.Beschreibung}`);
         }
-
-        // Bohrloch
         info.append('p').html(`<strong>Bohrloch:</strong> ${formatStatus(pearl.hasBohrloch)}`);
         if (pearl.hasBohrloch && pearl.ConditionAttributes.Bohrloch.Bearbeitungsspuren) {
             info.append('p').html(`<strong>Bohrloch Beschreibung:</strong> ${pearl.ConditionAttributes.Bohrloch.Bearbeitungsspuren}`);
@@ -245,7 +225,6 @@ function getImagePath(pearl) {
         return "images/placeholder.png";
     }
 }
-
 
 function getRandomColor() {
     // Generates a random color for the chart

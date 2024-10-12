@@ -8,7 +8,9 @@ let originalEnamelColors = [];
 let colorScale;
 let totalEnamelObjects = 0;
 let currentColorData = null;
-let plates = [];
+let currentPage = 1;
+let rowsPerPage = 5;
+let searchQuery = '';  // Track the search query
 
 function loadData() {
     const cachedData = localStorage.getItem('crownData');
@@ -59,24 +61,37 @@ function processEnamelData(data) {
     });
 
     enamelColors = Object.values(colorCounts);
+    enamelColors.sort((a, b) => d3.descending(a.count, b.count)); // Sort by count
+
     originalEnamelColors = enamelColors.slice(); // Preserve original data
     document.getElementById('totalColors').textContent = enamelColors.length;
 
-    // Create color scale
-    colorScale = d3
-        .scaleOrdinal()
-        .domain(enamelColors.map((d) => d.colorName))
-        .range(d3.schemeCategory10);
+    // Create color scale with semi-transparent colors for "transparent" types
+    colorScale = d3.scaleOrdinal()
+        .domain([
+            'opak gelb', 'opak hellblau', 'opak inkarnat', 'opak rot', 'opak türkis', 'opak weiß',
+            'transparent blau', 'transparent hellgrün', 'transparent braun', 'transparent schwarz',
+            'transparent dunkelblau', 'transparent grün', 'emailergänzung', 'transparent (?) dunkelblau', 'ergänzung'
+        ])
+        .range([
+            '#FFD700',  // Opak Gelb
+            '#ADD8E6',  // Opak Hellblau
+            '#FFC0CB',  // Opak Inkarnat
+            '#FF0000',  // Opak Rot
+            '#40E0D0',  // Opak Türkis
+            '#FFFFFF',  // Opak Weiß
+            'rgba(0, 0, 255, 0.6)',  // Transparent Blau
+            'rgba(144, 238, 144, 0.6)',  // Transparent Hellgrün
+            'rgba(165, 42, 42, 0.6)',  // Transparent Braun
+            'rgba(0, 0, 0, 0.6)',  // Transparent Schwarz
+            'rgba(0, 0, 139, 0.6)',  // Transparent Dunkelblau
+            'rgba(0, 128, 0, 0.6)',  // Transparent Grün
+            '#C0C0C0',  // Emailergänzung (Silver or Gray)
+            'rgba(70, 130, 180, 0.6)',  // Transparent (?) Dunkelblau
+            '#808080'   // Ergänzung (Gray)
+        ]);
 
-    // Extract plates for filter
-    plates = Array.from(
-        new Set(
-            enamelData.map((d) => d.Bestandteil).filter((plate) => plate)
-        )
-    ).sort();
-    populatePlateFilter();
     createVisualization();
-    createTimeline();  // You can still use the timeline chart for intervention data
 }
 
 function standardizeColorName(color) {
@@ -134,15 +149,10 @@ function createVisualization() {
         .attr('fill', (d) => colorScale(d.colorName))
         .on('click', (event, d) => {
             currentColorData = d;
+            currentPage = 1;  // Reset to the first page after search
             displayColorObjects(d);
-        })
-        .on('mouseover', function (event, d) {
-            d3.select(this).attr('opacity', 0.7);
-            showTooltip(event, d);
-        })
-        .on('mouseout', function () {
-            d3.select(this).attr('opacity', 1);
-            hideTooltip();
+            d3.selectAll('.bar').attr('stroke', 'none');  // Remove highlight from other bars
+            d3.select(event.currentTarget).attr('stroke', 'black').attr('stroke-width', 2);  // Highlight clicked bar
         })
         .transition()
         .duration(500)
@@ -165,147 +175,95 @@ function createVisualization() {
         .style('text-anchor', 'middle')
         .text('Enamel Colors');
 
-    d3.select('#sortByName').on('click', debounce(() => {
-        enamelColors.sort((a, b) => d3.ascending(a.colorName, b.colorName));
-        updateVisualization();
-    }, 300));
-
-    d3.select('#sortByCount').on('click', debounce(() => {
-        enamelColors.sort((a, b) => d3.descending(a.count, b.count));
-        updateVisualization();
-    }, 300));
-
-    d3.select('#blueFilter').on('change', function () {
-        if (this.checked) {
-            enamelColors = originalEnamelColors.filter((d) =>
-                d.colorName.includes('blau')
-            );
-        } else {
-            enamelColors = originalEnamelColors.slice(); 
-        }
-        updateVisualization();
-    });
-
+    // Listen for search input changes
     document.getElementById('searchInput').addEventListener('input', function () {
-        const searchTerm = this.value.toLowerCase();
-        const filteredObjects = currentColorData.objects.filter(obj =>
-            obj.ObjectID.toLowerCase().includes(searchTerm) || 
-            obj.ObjectName.toLowerCase().includes(searchTerm)
+        searchQuery = this.value.toLowerCase();  // Store the search query
+        displayColorObjects(currentColorData);  // Update the table based on the new search
+    });
+}
+
+function displayColorObjects(colorData) {
+    const tbody = d3.select('#colorObjectsTable tbody');
+    tbody.html(''); // Clear the table first
+
+    // Apply search filter
+    let filteredObjects = colorData.objects.filter(obj => {
+        return (
+            obj.ObjectID.toString().includes(searchQuery) ||
+            obj.ObjectName.toLowerCase().includes(searchQuery) ||
+            obj.Bestandteil.toLowerCase().includes(searchQuery)
         );
-        displayColorObjects({ objects: filteredObjects });
     });
 
-    function updateVisualization() {
-        xScale.domain(enamelColors.map((d) => d.colorName));
+    const paginatedData = paginate(filteredObjects, currentPage, rowsPerPage);
 
-        const bars = chartGroup.selectAll('.bar').data(enamelColors, (d) => d.colorName);
+    paginatedData.data.forEach((obj) => {
+        tbody.append('tr').html(`
+            <td><a href="#" onclick="showObjectDetails(${obj.ObjectID})">${obj.ObjectID}</a></td>
+            <td>${obj.ObjectName}</td>
+            <td>${obj.Bestandteil}</td>
+            <td>${formatConditionAttributes(obj.ConditionAttributes)}</td>
+            <td>${formatInterventions(obj.Interventions)}</td>
+            <td>${formatMedia(obj.Media)}</td>
+        `);
+    });
 
-        bars
-            .enter()
-            .append('rect')
-            .attr('class', 'bar')
-            .attr('x', (d) => xScale(d.colorName))
-            .attr('y', (d) => yScale(d.count))
-            .attr('width', xScale.bandwidth())
-            .attr('height', (d) => height - yScale(d.count))
-            .attr('fill', (d) => colorScale(d.colorName))
-            .merge(bars)
-            .transition()
-            .duration(500)
-            .attr('x', (d) => xScale(d.colorName))
-            .attr('y', (d) => yScale(d.count))
-            .attr('width', xScale.bandwidth())
-            .attr('height', (d) => height - yScale(d.count));
+    createPaginationControls(paginatedData.totalPages);
+}
 
-        bars
-            .exit()
-            .transition()
-            .duration(500)
-            .attr('height', 0)
-            .attr('y', height)
-            .remove();
+function formatConditionAttributes(attributes) {
+    if (!attributes) return 'N/A';
+    return `Blasen: ${attributes.Blasen[""]}, Fehlstellen: ${attributes.Fehlstellen[""]}`;
+}
 
-        chartGroup
-            .select('.x-axis')
-            .transition()
-            .duration(500)
-            .call(d3.axisBottom(xScale))
-            .selectAll('text')
-            .attr('transform', 'rotate(45)')
-            .style('text-anchor', 'start');
+function formatInterventions(interventions) {
+    if (!interventions || interventions.length === 0) return 'N/A';
+    return interventions.map(intervention => `
+        <strong>${intervention.SurveyISODate}</strong>: ${intervention.Details[0].BriefDescription}
+    `).join('<br>');
+}
+
+function formatMedia(media) {
+    if (!media || media.length === 0) return 'N/A';
+    return media.map(item => `<a href="${getImagePath(item)}" target="_blank">${item.RenditionNumber}</a>`).join('<br>');
+}
+
+function getImagePath(item) {
+    if (item && item.FileName) {
+        const cleanedPath = item.FileName.replace('Projekte\\', '').replace('CROWN\\CR_1_B\\', '').replace(/\\/g, '/');
+        return `assets/${cleanedPath}`;
+    } else {
+        return "images/placeholder.png";
     }
 }
 
-function createTimeline() {
-    // Placeholder function for creating an interventions timeline
-    // Add D3-based time visualization using interventions data
-}
-
-function displayColorObjects(colorData, filterPlate = 'all') {
-    const tbody = d3.select('#colorObjectsTable tbody');
-    tbody.html('');
-
-    const filteredObjects =
-        filterPlate === 'all'
-            ? colorData.objects
-            : colorData.objects.filter((obj) => obj.Bestandteil === filterPlate);
-
-    filteredObjects.forEach((obj) => {
-        tbody.append('tr').html(`
-            <td>${obj.ObjectID}</td>
-            <td>${obj.ObjectName}</td>
-            <td>${obj.Bestandteil}</td>
-            <td>${obj.Condition ? obj.Condition.Beschreibung : 'Unknown'}</td>
-        `);
-    });
-}
-
-function populatePlateFilter() {
-    const plateFilter = d3.select('#plateFilter');
-
-    plateFilter
-        .selectAll('option.plate-option')
-        .data(plates)
-        .enter()
-        .append('option')
-        .attr('class', 'plate-option')
-        .attr('value', (d) => d)
-        .text((d) => d);
-
-    plateFilter.on('change', function () {
-        const selectedPlate = this.value;
-        if (currentColorData) {
-            displayColorObjects(currentColorData, selectedPlate);
-        }
-    });
-}
-
-function debounce(func, delay) {
-    let timer;
-    return function () {
-        clearTimeout(timer);
-        timer = setTimeout(() => func.apply(this, arguments), delay);
+// Pagination
+function paginate(items, page, perPage) {
+    const offset = (page - 1) * perPage;
+    const paginatedItems = items.slice(offset, offset + perPage);
+    const totalPages = Math.ceil(items.length / perPage);
+    return {
+        data: paginatedItems,
+        totalPages: totalPages
     };
 }
 
-// Tooltip functions
-const tooltip = d3.select('.tooltip');
+function createPaginationControls(totalPages) {
+    const paginationContainer = d3.select("#paginationControls");
+    paginationContainer.html('');
 
-function showTooltip(event, d) {
-    const totalObjects = d.count;
-    const percentage = ((d.count / totalEnamelObjects) * 100).toFixed(2);
-    tooltip
-        .html(`
-            <strong>${d.colorName}</strong><br>
-            Count: ${totalObjects}<br>
-            Percentage: ${percentage}%<br>
-            Total Plates: ${d.objects.length ? d.objects[0].Bestandteil : 'Unknown'}
-        `)
-        .style('left', event.pageX + 10 + 'px')
-        .style('top', event.pageY - 10 + 'px')
-        .style('display', 'block');
+    for (let i = 1; i <= totalPages; i++) {
+        paginationContainer.append('button')
+            .text(i)
+            .attr('class', `page-btn ${i === currentPage ? 'active' : ''}`)
+            .on('click', () => {
+                currentPage = i;
+                displayColorObjects(currentColorData);
+            });
+    }
 }
 
-function hideTooltip() {
-    tooltip.style('display', 'none');
+// Drill down to object details
+function showObjectDetails(objectId) {
+    alert(`Displaying details for Object ID: ${objectId}`);
 }
