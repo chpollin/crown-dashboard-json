@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Bildquellen-Analyse - Kronenforschungs-Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Custom styles */
+        .bildquelle-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .bildquelle-card {
+            width: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .bildquelle-card img {
+            width: 100%;
+            height: auto;
+        }
+        .stat-box {
+            padding: 15px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .filter-section {
+            margin-bottom: 20px;
+        }
+        .filter-section h4 {
+            margin-bottom: 15px;
+        }
+        .filter-section .form-select {
+            margin-bottom: 10px;
+        }
+        .reset-button {
+            margin-top: 10px;
+        }
+        .status-ja {
+            color: green;
+            font-weight: bold;
+        }
+        .status-nein {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Kronen-Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1>Bildquellen-Analyse</h1>
+        <p>Übersicht und Analyse aller Bildquellen.</p>
+
+        <!-- Summary Statistics -->
+        <div class="row">
+            <div class="col-md-4">
+                <div id="totalBildquellen" class="stat-box">
+                    <h3>Gesamtzahl der Bildquellen</h3>
+                    <p id="bildquelleCount"></p>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div id="mediumDistribution" class="stat-box">
+                    <h3>Verteilung nach Medium</h3>
+                    <canvas id="mediumChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <h4>Filter</h4>
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="ansichtFilter" class="form-label">Ansicht:</label>
+                    <select id="ansichtFilter" class="form-select">
+                        <option value="all">Alle Ansichten</option>
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="farbeFilter" class="form-label">Farbe:</label>
+                    <select id="farbeFilter" class="form-select">
+                        <option value="all">Alle Farben</option>
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="mediumFilter" class="form-label">Medium:</label>
+                    <select id="mediumFilter" class="form-select">
+                        <option value="all">Alle Medien</option>
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="internetFilter" class="form-label">Im Internet verfügbar:</label>
+                    <select id="internetFilter" class="form-select">
+                        <option value="all">Alle</option>
+                        <option value="Ja">Ja</option>
+                        <option value="Nein">Nein</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="relevanzFilter" class="form-label">Relevanz für Restaurierungsgeschichte:</label>
+                    <select id="relevanzFilter" class="form-select">
+                        <option value="all">Alle</option>
+                        <option value="Ja">Ja</option>
+                        <option value="Nein">Nein</option>
+                    </select>
+                </div>
+                <!-- Add more filters as needed -->
+            </div>
+            <button id="resetFilters" class="btn btn-secondary reset-button">Filter zurücksetzen</button>
+        </div>
+
+        <!-- Bildquelle Gallery -->
+        <div class="mt-4">
+            <h4>Bildquellen Galerie</h4>
+            <div id="bildquelleGallery" class="bildquelle-gallery">
+                <!-- Bildquelle cards will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="js/bildquelle-analyzer.js"></script>
+</body>
+</html>
