@@ -1,259 +1,408 @@
 // bildquelle-analyzer.js
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadData();
-});
+/**
+ * BildquelleAnalyzer module for analyzing and displaying Bildquelle data.
+ * @module BildquelleAnalyzer
+ */
+const BildquelleAnalyzer = (function() {
+    // Private variables
+    let crownData = [];
+    let bildquelleData = [];
+    let filteredBildquelleData = [];
 
-let crownData = [];
-let bildquelleData = [];
-let filteredBildquelleData = [];
-
-let ansichten = new Set();
-let farben = new Set();
-let medien = new Set();
-
-function loadData() {
-    d3.json('data/crown_data.json')
-        .then(processData)
-        .then(() => {
-            populateFilters();
-            displaySummaryStatistics();
-            createMediumChart();
-            displayBildquelleGallery();
-        })
-        .catch(handleError);
-}
-
-function handleError(error) {
-    console.error('Fehler beim Laden der Daten:', error);
-    alert('Fehler beim Laden der Daten.');
-}
-
-function processData(data) {
-    crownData = data;
-    bildquelleData = crownData.filter(d => d.Bestandteil && d.Bestandteil.toLowerCase() === 'bildquelle');
-
-    // Initialize sets for filters
-    ansichten = new Set();
-    farben = new Set();
-    medien = new Set();
-
-    bildquelleData.forEach(bild => {
-        // Ansicht
-        let ansichtObj = bild.ConditionAttributes && bild.ConditionAttributes.Ansicht;
-        let ansicht = 'Unbekannt';
-        if (ansichtObj) {
-            for (let key in ansichtObj) {
-                if (ansichtObj[key] === 1.0) {
-                    ansicht = key;
-                    break;
-                }
-            }
-        }
-        bild.ansicht = ansicht;
-        ansichten.add(ansicht);
-
-        // Farbe
-        let farbe = bild.ConditionAttributes && bild.ConditionAttributes.Farbe
-            ? bild.ConditionAttributes.Farbe[""] || 'Unbekannt'
-            : 'Unbekannt';
-        bild.farbe = farbe.trim();
-        farben.add(bild.farbe);
-
-        // Medium
-        let medium = bild.Medium || 'Unbekannt';
-        bild.medium = medium.trim();
-        medien.add(bild.medium);
-
-        // Internet Verfügbarkeit
-        let internet = bild.ConditionAttributes && bild.ConditionAttributes.Internet
-            ? bild.ConditionAttributes.Internet[""] === 1.0
-            : false;
-        bild.internet = internet;
-
-        // Relevanz für Restaurierungsgeschichte
-        let relevanz = bild.ConditionAttributes && bild.ConditionAttributes["relevant für Restaurierungsgeschichte"]
-            ? bild.ConditionAttributes["relevant für Restaurierungsgeschichte"] === 1.0
-            : false;
-        bild.relevanz = relevanz;
-    });
-
-    filteredBildquelleData = bildquelleData;
-}
-
-function populateFilters() {
-    // Ansicht Filter
-    const ansichtFilter = d3.select('#ansichtFilter');
-    ansichten.forEach(ansicht => {
-        ansichtFilter.append('option')
-            .attr('value', ansicht)
-            .text(ansicht);
-    });
-
-    // Farbe Filter
-    const farbeFilter = d3.select('#farbeFilter');
-    farben.forEach(farbe => {
-        farbeFilter.append('option')
-            .attr('value', farbe)
-            .text(farbe);
-    });
-
-    // Medium Filter
-    const mediumFilter = d3.select('#mediumFilter');
-    medien.forEach(medium => {
-        mediumFilter.append('option')
-            .attr('value', medium)
-            .text(medium);
-    });
-
-    // Event Listeners
-    d3.selectAll('.form-select').on('change', applyFilters);
-    d3.select('#resetFilters').on('click', resetFilters);
-}
-
-function applyFilters() {
-    const selectedAnsicht = d3.select('#ansichtFilter').property('value');
-    const selectedFarbe = d3.select('#farbeFilter').property('value');
-    const selectedMedium = d3.select('#mediumFilter').property('value');
-    const selectedInternet = d3.select('#internetFilter').property('value');
-    const selectedRelevanz = d3.select('#relevanzFilter').property('value');
-
-    filteredBildquelleData = bildquelleData.filter(bild => {
-        let ansichtMatch = (selectedAnsicht === 'all') || (bild.ansicht === selectedAnsicht);
-        let farbeMatch = (selectedFarbe === 'all') || (bild.farbe === selectedFarbe);
-        let mediumMatch = (selectedMedium === 'all') || (bild.medium === selectedMedium);
-        let internetMatch = (selectedInternet === 'all') || ((bild.internet ? 'Ja' : 'Nein') === selectedInternet);
-        let relevanzMatch = (selectedRelevanz === 'all') || ((bild.relevanz ? 'Ja' : 'Nein') === selectedRelevanz);
-
-        return ansichtMatch && farbeMatch && mediumMatch && internetMatch && relevanzMatch;
-    });
-
-    displayBildquelleGallery();
-}
-
-function resetFilters() {
-    d3.select('#ansichtFilter').property('value', 'all');
-    d3.select('#farbeFilter').property('value', 'all');
-    d3.select('#mediumFilter').property('value', 'all');
-    d3.select('#internetFilter').property('value', 'all');
-    d3.select('#relevanzFilter').property('value', 'all');
-
-    applyFilters();
-}
-
-function displaySummaryStatistics() {
-    // Total Bildquellen
-    d3.select('#bildquelleCount').text(bildquelleData.length);
-}
-
-function createMediumChart() {
-    // Prepare data for the chart
-    const mediumCounts = {};
-    bildquelleData.forEach(bild => {
-        let medium = bild.medium || 'Unbekannt';
-        mediumCounts[medium] = (mediumCounts[medium] || 0) + 1;
-    });
-
-    const chartData = {
-        labels: Object.keys(mediumCounts),
-        datasets: [{
-            data: Object.values(mediumCounts),
-            backgroundColor: Object.keys(mediumCounts).map(() => getRandomColor()),
-        }]
+    const filters = {
+        ansichten: new Set(),
+        farben: new Set(),
+        medien: new Set()
     };
 
-    const ctx = document.getElementById('mediumChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',
-        data: chartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'bottom' },
-                title: { display: false }
-            }
-        },
-    });
-}
+    const config = {
+        dataUrl: 'data/crown_data.json',
+        galleryItemsPerPage: 20
+    };
 
-function displayBildquelleGallery() {
-    const gallery = d3.select('#bildquelleGallery');
-    gallery.html('');
-
-    if (filteredBildquelleData.length === 0) {
-        gallery.append('p').text('Keine Bildquellen entsprechen den ausgewählten Filtern.');
-        return;
+    /**
+     * Initializes the BildquelleAnalyzer.
+     */
+    async function init() {
+        try {
+            await loadData();
+            setupEventListeners();
+            updateUI();
+        } catch (error) {
+            handleError(error);
+        }
     }
 
+    /**
+     * Loads and processes the data.
+     */
+    async function loadData() {
+        const response = await fetch(config.dataUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        processData(data);
+    }
+
+    /**
+     * Processes the raw data into usable format.
+     * @param {Object[]} data - The raw crown data.
+     */
+    function processData(data) {
+        crownData = data;
+        bildquelleData = crownData.filter(d => d.Bestandteil?.toLowerCase() === 'bildquelle');
+
+        bildquelleData.forEach(bild => {
+            bild.ansicht = extractAnsicht(bild);
+            bild.farbe = extractFarbe(bild);
+            bild.media = extractMedia(bild);
+            bild.internet = extractInternetStatus(bild);
+            bild.relevanz = extractRelevanz(bild);
+
+            updateFilters(bild);
+        });
+
+        filteredBildquelleData = [...bildquelleData];
+    }
+
+    /**
+     * Extracts the 'Ansicht' property from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {string} The extracted 'Ansicht' value.
+     */
+    function extractAnsicht(bild) {
+        const ansichtObj = bild.ConditionAttributes?.Ansicht;
+        if (ansichtObj) {
+            for (let key in ansichtObj) {
+                if (ansichtObj[key] === 1.0) return key;
+            }
+        }
+        return 'Unbekannt';
+    }
+
+    /**
+     * Extracts the 'Farbe' property from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {string} The extracted 'Farbe' value.
+     */
+    function extractFarbe(bild) {
+        return bild.ConditionAttributes?.Farbe?.[""]?.trim() || 'Unbekannt';
+    }
+
+    /**
+     * Extracts and splits the 'Medium' property from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {string[]} An array of media types.
+     */
+    function extractMedia(bild) {
+        const medium = bild.Medium || 'Unbekannt';
+        return medium.split(';').map(m => m.trim());
+    }
+
+    /**
+     * Extracts the internet availability status from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {boolean} The internet availability status.
+     */
+    function extractInternetStatus(bild) {
+        return bild.ConditionAttributes?.Internet?.[""] === 1.0;
+    }
+
+    /**
+     * Extracts the relevance status from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {boolean} The relevance status.
+     */
+    function extractRelevanz(bild) {
+        return bild.ConditionAttributes?.["relevant für Restaurierungsgeschichte"] === 1.0;
+    }
+
+    /**
+     * Updates the filter sets with values from a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     */
+    function updateFilters(bild) {
+        filters.ansichten.add(bild.ansicht);
+        filters.farben.add(bild.farbe);
+        bild.media.forEach(medium => filters.medien.add(medium));
+    }
+
+    /**
+     * Sets up event listeners for user interactions.
+     */
+    function setupEventListeners() {
+        document.querySelectorAll('.form-select').forEach(select => {
+            select.addEventListener('change', applyFilters);
+        });
+        document.getElementById('resetFilters').addEventListener('click', resetFilters);
+    }
+
+    /**
+     * Applies the selected filters to the data.
+     */
+    function applyFilters() {
+        const selectedFilters = {
+            ansicht: document.getElementById('ansichtFilter').value,
+            farbe: document.getElementById('farbeFilter').value,
+            medium: document.getElementById('mediumFilter').value,
+            internet: document.getElementById('internetFilter').value,
+            relevanz: document.getElementById('relevanzFilter').value
+        };
+
+        filteredBildquelleData = bildquelleData.filter(bild => 
+            (selectedFilters.ansicht === 'all' || bild.ansicht === selectedFilters.ansicht) &&
+            (selectedFilters.farbe === 'all' || bild.farbe === selectedFilters.farbe) &&
+            (selectedFilters.medium === 'all' || bild.media.includes(selectedFilters.medium)) &&
+            (selectedFilters.internet === 'all' || bild.internet.toString() === selectedFilters.internet) &&
+            (selectedFilters.relevanz === 'all' || bild.relevanz.toString() === selectedFilters.relevanz)
+        );
+
+        updateUI();
+    }
+
+    /**
+     * Resets all filters to their default state.
+     */
+    function resetFilters() {
+        document.querySelectorAll('.form-select').forEach(select => {
+            select.value = 'all';
+        });
+        filteredBildquelleData = [...bildquelleData];
+        updateUI();
+    }
+
+    /**
+     * Updates all UI components.
+     */
+    function updateUI() {
+        populateFilters();
+        displaySummaryStatistics();
+        createMediumTreemap();
+        displayBildquelleGallery();
+    }
+
+    /**
+     * Populates the filter dropdowns with options.
+     */
+    function populateFilters() {
+        populateFilterOptions('ansichtFilter', filters.ansichten);
+        populateFilterOptions('farbeFilter', filters.farben);
+        populateFilterOptions('mediumFilter', filters.medien);
+    }
+
+    /**
+     * Populates a specific filter dropdown with options.
+     * @param {string} filterId - The ID of the filter element.
+     * @param {Set} options - The set of options to populate the filter with.
+     */
+    function populateFilterOptions(filterId, options) {
+        const select = document.getElementById(filterId);
+        select.innerHTML = '<option value="all">Alle</option>';
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = option;
+            select.appendChild(optionElement);
+        });
+    }
+
+    /**
+     * Displays summary statistics.
+     */
+    function displaySummaryStatistics() {
+        document.getElementById('bildquelleCount').textContent = filteredBildquelleData.length;
+    }
+
+    /**
+     * Creates the medium distribution treemap.
+     */
+// ... (previous code remains the same) ...
+
+/**
+ * Creates the medium distribution treemap.
+ */
+function createMediumTreemap() {
+    const container = document.getElementById('mediumTreemap');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    // Clear previous treemap
+    d3.select("#mediumTreemap").html("");
+
+    // Prepare data for the treemap
+    const mediumCounts = new Map();
     filteredBildquelleData.forEach(bild => {
-        const card = gallery.append('div')
-            .attr('class', 'bildquelle-card');
-
-        // Bildquelle Image
-        card.append('img')
-            .attr('src', getImagePath(bild))
-            .attr('alt', bild.ObjectName || 'Bildquelle');
-
-        // Bildquelle Information
-        const info = card.append('div').attr('class', 'bildquelle-info mt-2');
-
-        info.append('h5').text(bild.ObjectName || 'Unbekanntes Objekt');
-
-        info.append('p').html(`<strong>Titel:</strong> ${bild.Description || 'Keine Beschreibung'}`);
-        info.append('p').html(`<strong>Medium:</strong> ${bild.medium}`);
-        info.append('p').html(`<strong>Ansicht:</strong> ${bild.ansicht}`);
-        info.append('p').html(`<strong>Farbe:</strong> ${bild.farbe}`);
-        info.append('p').html(`<strong>Datierung:</strong> ${bild.Dated || 'Unbekannt'}`);
-        info.append('p').html(`<strong>Internet Verfügbarkeit:</strong> ${formatStatus(bild.internet)}`);
-        info.append('p').html(`<strong>Relevanz für Restaurierungsgeschichte:</strong> ${formatStatus(bild.relevanz)}`);
-
-        // Additional ConditionAttributes
-        if (bild.ConditionAttributes) {
-            // Eigentümer/Standort/Inv.Nr.
-            if (bild.ConditionAttributes["Eigentümer/Standort/Inv.Nr."]) {
-                info.append('p').html(`<strong>Standort:</strong> ${bild.ConditionAttributes["Eigentümer/Standort/Inv.Nr."][""] || 'Unbekannt'}`);
-            }
-            // Provenienz
-            if (bild.ConditionAttributes.Provenienz) {
-                info.append('p').html(`<strong>Provenienz:</strong> ${bild.ConditionAttributes.Provenienz[""] || 'Unbekannt'}`);
-            }
-            // Darstellung allgemein
-            if (bild.ConditionAttributes["Darstellung allgemein"]) {
-                info.append('p').html(`<strong>Darstellung:</strong> ${bild.ConditionAttributes["Darstellung allgemein"][""] || 'Keine Angabe'}`);
-            }
-        }
-
-        // Dimensions
-        if (bild.Dimensions) {
-            info.append('p').html(`<strong>Dimensionen:</strong> ${bild.Dimensions}`);
-        }
+        bild.media.forEach(medium => {
+            mediumCounts.set(medium, (mediumCounts.get(medium) || 0) + 1);
+        });
     });
-}
 
-function getImagePath(bild) {
-    // Check if 'Media' and its fields exist
-    if (bild.Media && bild.Media.length > 0 && bild.Media[0].FileName) {
-        // Adjust the path as necessary
-        const cleanedPath = bild.Media[0].FileName.replace(/\\/g, '/');
-        // Construct the final path
-        return `assets/${cleanedPath}`;
-    } else {
+    const data = {
+        name: "Media",
+        children: Array.from(mediumCounts, ([name, value]) => ({ name, value }))
+    };
+
+    // Create the treemap layout
+    const treemap = d3.treemap()
+        .size([width, height])
+        .padding(1)
+        .round(true);
+
+    const root = d3.hierarchy(data)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+    treemap(root);
+
+    // Create the SVG container
+    const svg = d3.select("#mediumTreemap")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    // Create color scale
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    // Create the treemap cells
+    const cell = svg.selectAll("g")
+        .data(root.leaves())
+        .enter().append("g")
+        .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+    cell.append("rect")
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => color(d.data.name));
+
+    cell.append("text")
+        .attr("x", 3)
+        .attr("y", 13)
+        .text(d => d.data.name)
+        .append("tspan")
+        .attr("x", 3)
+        .attr("y", 25)
+        .text(d => d.value);
+
+    cell.append("title")
+        .text(d => `${d.data.name}\n${d.value} Objekte`);
+}
+    /**
+     * Displays the Bildquelle gallery.
+     */
+    function displayBildquelleGallery() {
+        const gallery = document.getElementById('bildquelleGallery');
+        gallery.innerHTML = '';
+
+        if (filteredBildquelleData.length === 0) {
+            gallery.innerHTML = '<p>Keine Bildquellen entsprechen den ausgewählten Filtern.</p>';
+            return;
+        }
+
+        filteredBildquelleData.slice(0, config.galleryItemsPerPage).forEach(bild => {
+            const card = createBildquelleCard(bild);
+            gallery.appendChild(card);
+        });
+
+        if (filteredBildquelleData.length > config.galleryItemsPerPage) {
+            const loadMoreButton = createLoadMoreButton();
+            gallery.appendChild(loadMoreButton);
+        }
+    }
+
+    /**
+     * Creates a card element for a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {HTMLElement} The created card element.
+     */
+    function createBildquelleCard(bild) {
+        const card = document.createElement('div');
+        card.className = 'bildquelle-card';
+        card.innerHTML = `
+            <img src="${getImagePath(bild)}" alt="${bild.ObjectName || 'Bildquelle'}" loading="lazy">
+            <div class="bildquelle-info">
+                <h5>${bild.ObjectName || 'Unbekanntes Objekt'}</h5>
+                <p><strong>Titel:</strong> ${bild.Description || 'Keine Beschreibung'}</p>
+                <p><strong>Medium:</strong> ${bild.media.join(', ')}</p>
+                <p><strong>Ansicht:</strong> ${bild.ansicht}</p>
+                <p><strong>Farbe:</strong> ${bild.farbe}</p>
+                <p><strong>Datierung:</strong> ${bild.Dated || 'Unbekannt'}</p>
+                <p><strong>Internet Verfügbarkeit:</strong> ${formatStatus(bild.internet)}</p>
+                <p><strong>Relevanz für Restaurierungsgeschichte:</strong> ${formatStatus(bild.relevanz)}</p>
+            </div>
+        `;
+        return card;
+    }
+
+    /**
+     * Creates a "Load More" button for the gallery.
+     * @returns {HTMLElement} The created button element.
+     */
+    function createLoadMoreButton() {
+        const button = document.createElement('button');
+        button.textContent = 'Mehr laden';
+        button.className = 'btn btn-primary mt-3';
+        button.addEventListener('click', loadMoreGalleryItems);
+        return button;
+    }
+
+    /**
+     * Loads more items into the gallery.
+     */
+    function loadMoreGalleryItems() {
+        const gallery = document.getElementById('bildquelleGallery');
+        const currentCount = gallery.querySelectorAll('.bildquelle-card').length;
+        const nextBatch = filteredBildquelleData.slice(currentCount, currentCount + config.galleryItemsPerPage);
+
+        nextBatch.forEach(bild => {
+            const card = createBildquelleCard(bild);
+            gallery.insertBefore(card, gallery.lastElementChild);
+        });
+
+        if (currentCount + nextBatch.length >= filteredBildquelleData.length) {
+            gallery.removeChild(gallery.lastElementChild);
+        }
+    }
+
+    /**
+     * Gets the image path for a Bildquelle item.
+     * @param {Object} bild - A Bildquelle item.
+     * @returns {string} The image path.
+     */
+    function getImagePath(bild) {
+        if (bild.Media && bild.Media.length > 0 && bild.Media[0].FileName) {
+            const cleanedPath = bild.Media[0].FileName.replace(/\\/g, '/');
+            return `assets/${cleanedPath}`;
+        }
         return "images/placeholder.png";
     }
-}
 
-function getRandomColor() {
-    // Generates a random color for the chart
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+    /**
+     * Formats a boolean status for display.
+     * @param {boolean} status - The status to format.
+     * @returns {string} The formatted status HTML.
+     */
+    function formatStatus(status) {
+        return status
+            ? '<span class="status-ja">Ja</span>'
+            : '<span class="status-nein">Nein</span>';
     }
-    return color;
-}
 
-function formatStatus(status) {
-    return status
-        ? '<span class="status-ja">Ja</span>'
-        : '<span class="status-nein">Nein</span>';
-}
+    /**
+     * Handles and displays errors.
+     * @param {Error} error - The error to handle.
+     */
+    function handleError(error) {
+        console.error('Fehler:', error);
+        alert(`Ein Fehler ist aufgetreten: ${error.message}`);
+    }
+
+    // Public API
+    return {
+        init: init
+    };
+})();
+
+// Initialize the application when the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', BildquelleAnalyzer.init);

@@ -2,142 +2,183 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bildquellen-Analyse - Kronenforschungs-Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* Custom styles */
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .navbar {
+            margin-bottom: 20px;
+        }
         .bildquelle-gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
         }
         .bildquelle-card {
-            width: 300px;
-            border: 1px solid #ccc;
-            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        .bildquelle-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         .bildquelle-card img {
             width: 100%;
-            height: auto;
+            height: 200px;
+            object-fit: cover;
+        }
+        .bildquelle-info {
+            padding: 15px;
+        }
+        .bildquelle-info h5 {
+            margin-top: 0;
+            font-size: 1.1em;
+        }
+        .bildquelle-info p {
+            margin-bottom: 5px;
+            font-size: 0.9em;
         }
         .stat-box {
-            padding: 15px;
-            border: 1px solid #ccc;
-            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
             text-align: center;
         }
         .filter-section {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
             margin-bottom: 20px;
         }
         .filter-section h4 {
             margin-bottom: 15px;
         }
-        .filter-section .form-select {
-            margin-bottom: 10px;
-        }
         .reset-button {
             margin-top: 10px;
         }
         .status-ja {
-            color: green;
+            color: #28a745;
             font-weight: bold;
         }
         .status-nein {
-            color: red;
+            color: #dc3545;
             font-weight: bold;
+        }
+        #mediumTreemap {
+            width: 100%;
+            height: 500px;
+            overflow: hidden;
+        }
+        #mediumTreemap rect {
+            stroke: #fff;
+        }
+        #mediumTreemap text {
+            font-size: 12px;
+            fill: #fff;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">Kronen-Dashboard</a>
+            <a class="navbar-brand" href="#">Kronen-Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Bildquellen</a>
+                    </li>
+                    <!-- Add more navigation items as needed -->
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <h1>Bildquellen-Analyse</h1>
-        <p>Übersicht und Analyse aller Bildquellen.</p>
+    <div class="container-fluid">
+        <h1 class="mb-4">Bildquellen-Analyse</h1>
+        <p class="lead mb-4">Übersicht und Analyse aller Bildquellen im Kronenforschungsprojekt.</p>
 
-        <!-- Summary Statistics -->
-        <div class="row">
-            <div class="col-md-4">
-                <div id="totalBildquellen" class="stat-box">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-box">
                     <h3>Gesamtzahl der Bildquellen</h3>
-                    <p id="bildquelleCount"></p>
+                    <p id="bildquelleCount" class="display-4">-</p>
                 </div>
             </div>
-            <div class="col-md-8">
-                <div id="mediumDistribution" class="stat-box">
+            <div class="col-md-9">
+                <div class="stat-box">
                     <h3>Verteilung nach Medium</h3>
-                    <canvas id="mediumChart"></canvas>
+                    <div id="mediumTreemap"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Filters -->
         <div class="filter-section">
             <h4>Filter</h4>
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3">
                     <label for="ansichtFilter" class="form-label">Ansicht:</label>
                     <select id="ansichtFilter" class="form-select">
                         <option value="all">Alle Ansichten</option>
-                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3">
                     <label for="farbeFilter" class="form-label">Farbe:</label>
                     <select id="farbeFilter" class="form-select">
                         <option value="all">Alle Farben</option>
-                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3">
                     <label for="mediumFilter" class="form-label">Medium:</label>
                     <select id="mediumFilter" class="form-select">
                         <option value="all">Alle Medien</option>
-                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3">
                     <label for="internetFilter" class="form-label">Im Internet verfügbar:</label>
                     <select id="internetFilter" class="form-select">
                         <option value="all">Alle</option>
-                        <option value="Ja">Ja</option>
-                        <option value="Nein">Nein</option>
+                        <option value="true">Ja</option>
+                        <option value="false">Nein</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-3">
                     <label for="relevanzFilter" class="form-label">Relevanz für Restaurierungsgeschichte:</label>
                     <select id="relevanzFilter" class="form-select">
                         <option value="all">Alle</option>
-                        <option value="Ja">Ja</option>
-                        <option value="Nein">Nein</option>
+                        <option value="true">Ja</option>
+                        <option value="false">Nein</option>
                     </select>
                 </div>
-                <!-- Add more filters as needed -->
             </div>
             <button id="resetFilters" class="btn btn-secondary reset-button">Filter zurücksetzen</button>
         </div>
 
-        <!-- Bildquelle Gallery -->
-        <div class="mt-4">
-            <h4>Bildquellen Galerie</h4>
-            <div id="bildquelleGallery" class="bildquelle-gallery">
-                <!-- Bildquelle cards will be populated dynamically -->
-            </div>
+        <h2>Bildquellen Galerie</h2>
+        <div id="bildquelleGallery" class="bildquelle-gallery">
+            <!-- Bildquelle cards will be populated dynamically -->
         </div>
     </div>
 
-    <!-- JavaScript Libraries -->
+    <footer class="bg-light text-center text-lg-start mt-4">
+        <div class="container-fluid p-4">
+            <p>© 2024 Kronenforschungs-Dashboard. Alle Rechte vorbehalten.</p>
+        </div>
+    </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom JavaScript -->
     <script src="js/bildquelle-analyzer.js"></script>
 </body>
 </html>
