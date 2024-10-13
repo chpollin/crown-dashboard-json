@@ -174,42 +174,74 @@ function displayPearlGallery() {
     gallery.html('');
 
     if (filteredPearlData.length === 0) {
-        gallery.append('p').text('Keine Perlen entsprechen den ausgewählten Filtern.');
+        gallery.append('div')
+            .attr('class', 'col-12')
+            .append('p')
+            .attr('class', 'alert alert-info')
+            .text('Keine Perlen entsprechen den ausgewählten Filtern.');
         return;
     }
 
     filteredPearlData.forEach(pearl => {
         const card = gallery.append('div')
-            .attr('class', 'pearl-card');
+            .attr('class', 'col-md-6 col-lg-4 mb-4')
+            .append('div')
+            .attr('class', 'card h-100');
 
         // Pearl Image
         card.append('img')
             .attr('src', getImagePath(pearl))
+            .attr('class', 'card-img-top')
             .attr('alt', pearl.ObjectName || 'Perle');
 
         // Pearl Information
-        const info = card.append('div').attr('class', 'pearl-info mt-2');
+        const cardBody = card.append('div').attr('class', 'card-body');
 
-        info.append('h5').text(pearl.ObjectName || 'Unbekannte Perle');
+        cardBody.append('h5')
+            .attr('class', 'card-title')
+            .text(pearl.ObjectName || 'Unbekannte Perle');
 
-        info.append('p').html(`<strong>Form:</strong> ${pearl.form}`);
+        const infoList = cardBody.append('ul').attr('class', 'list-group list-group-flush');
+
+        infoList.append('li')
+            .attr('class', 'list-group-item')
+            .html(`<strong>Form:</strong> ${pearl.form}`);
 
         // Represent Ja/Nein visually
-        info.append('p').html(`<strong>Riss:</strong> ${formatStatus(pearl.hasRiss)}`);
+        infoList.append('li')
+            .attr('class', 'list-group-item')
+            .html(`<strong>Riss:</strong> ${formatStatus(pearl.hasRiss)}`);
         if (pearl.hasRiss && pearl.ConditionAttributes.Riss.Beschreibung) {
-            info.append('p').html(`<strong>Riss Beschreibung:</strong> ${pearl.ConditionAttributes.Riss.Beschreibung}`);
+            infoList.append('li')
+                .attr('class', 'list-group-item')
+                .html(`<strong>Riss Beschreibung:</strong> ${pearl.ConditionAttributes.Riss.Beschreibung}`);
         }
-        info.append('p').html(`<strong>Kratzer:</strong> ${formatStatus(pearl.hasKratzer)}`);
+
+        infoList.append('li')
+            .attr('class', 'list-group-item')
+            .html(`<strong>Kratzer:</strong> ${formatStatus(pearl.hasKratzer)}`);
         if (pearl.hasKratzer && pearl.ConditionAttributes.Kratzer.Beschreibung) {
-            info.append('p').html(`<strong>Kratzer Beschreibung:</strong> ${pearl.ConditionAttributes.Kratzer.Beschreibung}`);
+            infoList.append('li')
+                .attr('class', 'list-group-item')
+                .html(`<strong>Kratzer Beschreibung:</strong> ${pearl.ConditionAttributes.Kratzer.Beschreibung}`);
         }
-        info.append('p').html(`<strong>Fehlstelle:</strong> ${formatStatus(pearl.hasFehlstelle)}`);
+
+        infoList.append('li')
+            .attr('class', 'list-group-item')
+            .html(`<strong>Fehlstelle:</strong> ${formatStatus(pearl.hasFehlstelle)}`);
         if (pearl.hasFehlstelle && pearl.ConditionAttributes.Fehlstelle.Beschreibung) {
-            info.append('p').html(`<strong>Fehlstelle Beschreibung:</strong> ${pearl.ConditionAttributes.Fehlstelle.Beschreibung}`);
+            infoList.append('li')
+                .attr('class', 'list-group-item')
+                .html(`<strong>Fehlstelle Beschreibung:</strong> ${pearl.ConditionAttributes.Fehlstelle.Beschreibung}`);
         }
-        info.append('p').html(`<strong>Bohrloch:</strong> ${formatStatus(pearl.hasBohrloch)}`);
+
+        infoList.append('li')
+            .attr('class', 'list-group-item')
+            .html(`<strong>Bohrloch:</strong> ${formatStatus(pearl.hasBohrloch)}`);
         if (pearl.hasBohrloch && pearl.ConditionAttributes.Bohrloch.Bearbeitungsspuren) {
-            info.append('p').html(`<strong>Bohrloch Beschreibung:</strong> ${pearl.ConditionAttributes.Bohrloch.Bearbeitungsspuren}`);
+            infoList.append('li')
+                .attr('class', 'list-group-item')
+                .html(`<strong>Bohrloch Beschreibung:</strong> ${pearl.ConditionAttributes.Bohrloch.Bearbeitungsspuren}`);
         }
     });
 }
@@ -217,8 +249,7 @@ function displayPearlGallery() {
 function getImagePath(pearl) {
     // Check if 'Media' and its fields exist
     if (pearl.Media && pearl.Media.length > 0 && pearl.Media[0].FileName) {
-        // Remove 'Projekte\\CROWN\\CR_1_A\\' and replace backslashes with forward slashes
-        const cleanedPath = pearl.Media[0].FileName.replace('Projekte\\CROWN\\CR_1_A\\', '').replace(/\\/g, '/');
+        const cleanedPath = pearl.Media[0].FileName.replace('Projekte\\CROWN\\', '').replace(/\\/g, '/');
         // Construct the final path
         return `https://storage.googleapis.com/crown-dashboard/assets/${cleanedPath}`;
     } else {
