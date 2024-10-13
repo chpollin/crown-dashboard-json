@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,386 +7,98 @@
     <title>Crown Research Dashboard - Enhanced Fassung Comparison Tool</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        #sunburstContainer {
-            width: 100%;
-            height: 600px;
-        }
-        .tooltip {
-            position: absolute;
-            text-align: center;
-            padding: 8px;
-            font: 12px sans-serif;
-            background: lightsteelblue;
-            border: 0px;
-            border-radius: 8px;
-            pointer-events: none;
-        }
-        .error-message {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background-color: red;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            z-index: 1000;
-        }
-        #breadcrumb {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        .breadcrumb-item {
-            cursor: pointer;
-        }
-        .breadcrumb-item:hover {
-            text-decoration: underline;
-        }
-        #detailedView {
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">Crown Dashboard</a>
+        <div class="container">
+            <a class="navbar-brand" href="index.html">CROWN Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="fassung-comparison-tool.html">Fassung Comparison</a></li>
+                    <!-- Add other navigation items as needed -->
+                </ul>
+            </div>
         </div>
     </nav>
 
     <main class="container mt-4">
         <h1>Enhanced Fassung Comparison Tool</h1>
-        <p>Explore different types of settings (Fassungen) across the crown using an interactive Sunburst visualization.</p>
-
-        <!-- Filter Panel -->
-        <div id="filterPanel" class="card mb-4">
-            <div class="card-body">
-                <fieldset>
-                    <legend class="card-title">Filters</legend>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="materialFilter" class="form-label">Material:</label>
-                            <select id="materialFilter" class="form-select">
-                                <option value="">All</option>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="conditionFilter" class="form-label">Condition:</label>
-                            <select id="conditionFilter" class="form-select">
-                                <option value="">All</option>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="interventionFilter" class="form-label">Interventions:</label>
-                            <select id="interventionFilter" class="form-select">
-                                <option value="">All</option>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
-                        </div>
-                    </div>
-                </fieldset>
-            </div>
-        </div>
-
-        <!-- Breadcrumb Navigation -->
-        <nav id="breadcrumb" aria-label="breadcrumb">
-            <!-- Breadcrumb will be populated dynamically -->
-        </nav>
+        <p class="lead">Explore different types of settings (Fassungen) across the crown using an interactive Sunburst visualization.</p>
 
         <div class="row mt-4">
-            <div class="col-lg-8">
-                <!-- Sunburst Visualization Container -->
-                <div id="sunburstContainer" aria-label="Sunburst visualization of crown fassungen"></div>
+            <div class="col-lg-3">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title h5">Filters</h2>
+                        <form id="filterForm">
+                            <div class="mb-3">
+                                <label for="materialFilter" class="form-label">Material:</label>
+                                <select id="materialFilter" class="form-select">
+                                    <option value="">All</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="conditionFilter" class="form-label">Condition:</label>
+                                <select id="conditionFilter" class="form-select">
+                                    <option value="">All</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="interventionFilter" class="form-label">Interventions:</label>
+                                <select id="interventionFilter" class="form-select">
+                                    <option value="">All</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                            <button type="button" onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title h5">Export Data</h2>
+                        <button onclick="exportData()" class="btn btn-success">
+                            <i class="fas fa-file-export" aria-hidden="true"></i> Export Data
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="col-lg-4">
-                <!-- Detailed View Panel -->
-                <div id="detailedView">
-                    <h2>Fassung Details</h2>
-                    <p>Click on a segment in the Sunburst visualization to see detailed information here.</p>
+            <div class="col-lg-9">
+                <nav id="breadcrumb" aria-label="breadcrumb">
+                    <!-- Breadcrumb will be populated dynamically -->
+                </nav>
+                <div id="sunburstContainer" aria-label="Sunburst visualization of crown fassungen">
+                    <!-- Sunburst visualization will be rendered here -->
                 </div>
             </div>
         </div>
 
-        <!-- Export Button -->
-        <button onclick="exportData()" class="btn btn-success mt-3">
-            <i class="fas fa-file-export" aria-hidden="true"></i>
-            <span class="visually-hidden">Export</span> Export Data
-        </button>
+        <div class="row mt-4">
+            <div class="col-12">
+                <div id="detailedView" class="card">
+                    <div class="card-body">
+                        <h2 class="card-title h5">Fassung Details</h2>
+                        <p>Click on a segment in the Sunburst visualization to see detailed information here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <!-- Footer -->
     <footer class="bg-light text-center text-lg-start mt-4">
-        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
-            © 2024 Crown Research Dashboard
+        <div class="container p-4">
+            <p>&copy; 2024 Crown Research Dashboard. All rights reserved.</p>
         </div>
     </footer>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
-        // Insert the entire JavaScript code here
-        // Global variables
-        let crownData = [];
-        let svg, width, height, radius;
-        let arc, path, root;
-        let color = d3.scaleOrdinal(d3.schemeCategory10);
-
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('Initializing Enhanced Sunburst Fassung Comparison Tool');
-            loadData();
-        });
-
-        // Fetch the crown data
-        function loadData() {
-            d3.json('data/crown_data.json')
-                .then(data => {
-                    crownData = data;
-                    const hierarchicalData = processHierarchicalData(crownData);
-                    createSunburst(hierarchicalData);
-                })
-                .catch(error => {
-                    console.error('Error loading data:', error);
-                    displayErrorMessage('Failed to load data. Please try refreshing the page.');
-                });
-        }
-
-        // Process the data into a hierarchical structure
-        function processHierarchicalData(data) {
-            const root = {
-                name: "All Fassungen",
-                children: []
-            };
-
-            const fassungTypes = {};
-
-            data.forEach(item => {
-                const fassungType = item.Description || 'Unknown';
-                if (!fassungTypes[fassungType]) {
-                    fassungTypes[fassungType] = {
-                        name: fassungType,
-                        children: [
-                            { name: "ConditionAttributes", children: [] },
-                            { name: "Media", children: [] },
-                            { name: "ObjectDetails", children: [] }
-                        ]
-                    };
-                    root.children.push(fassungTypes[fassungType]);
-                }
-
-                // Process ConditionAttributes
-                for (let [key, value] of Object.entries(item.ConditionAttributes)) {
-                    fassungTypes[fassungType].children[0].children.push({
-                        name: key,
-                        value: typeof value === 'object' ? Object.values(value)[0] : value
-                    });
-                }
-
-                // Process Media
-                if (item.Media) {
-                    item.Media.forEach(media => {
-                        fassungTypes[fassungType].children[1].children.push({
-                            name: media.FileName,
-                            value: 1
-                        });
-                    });
-                }
-
-                // Process other object details
-                fassungTypes[fassungType].children[2].children.push(
-                    { name: "ObjectID", value: item.ObjectID },
-                    { name: "ObjectName", value: item.ObjectName },
-                    { name: "ObjectNumber", value: item.ObjectNumber },
-                    { name: "Medium", value: item.Medium }
-                );
-            });
-
-            return root;
-        }
-
-        // Create the Sunburst visualization
-        function createSunburst(data) {
-            const container = document.getElementById('sunburstContainer');
-            width = container.clientWidth;
-            height = container.clientHeight || 600;
-            radius = Math.min(width, height) / 2;
-
-            svg = d3.select('#sunburstContainer').append('svg')
-                .attr('width', width)
-                .attr('height', height)
-                .append('g')
-                .attr('transform', `translate(${width / 2},${height / 2})`);
-
-            root = d3.hierarchy(data)
-                .sum(d => d.value || 0)
-                .sort((a, b) => b.value - a.value);
-
-            const partition = d3.partition()
-                .size([2 * Math.PI, radius]);
-
-            partition(root);
-
-            arc = d3.arc()
-                .startAngle(d => d.x0)
-                .endAngle(d => d.x1)
-                .innerRadius(d => d.y0)
-                .outerRadius(d => d.y1);
-
-            path = svg.selectAll('path')
-                .data(root.descendants().slice(1))
-                .enter().append('path')
-                .attr('d', arc)
-                .style('fill', d => color((d.children ? d : d.parent).data.name))
-                .style('opacity', 0.7)
-                .on('click', clicked)
-                .on('mouseover', mouseover)
-                .on('mouseout', mouseout);
-
-            // Add labels
-            const label = svg.selectAll('text')
-                .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
-                .enter().append('text')
-                .attr('transform', labelTransform)
-                .attr('dy', '0.35em')
-                .text(d => d.data.name)
-                .attr('font-size', '10px')
-                .attr('fill', 'white')
-                .style('text-anchor', 'middle')
-                .style('pointer-events', 'none');
-
-            // Initialize breadcrumb
-            initializeBreadcrumb();
-
-            // Initialize tooltip
-            const tooltip = d3.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0);
-        }
-
-        function clicked(event, d) {
-            svg.transition().duration(750).tween('scale', () => {
-                const xd = d3.interpolate(root.x0, d.x0),
-                      yd = d3.interpolate(root.y0, d.y0),
-                      yr = d3.interpolate(root.y1, d.y1);
-                return t => { root.x0 = xd(t); root.y0 = yd(t); root.y1 = yr(t); };
-            }).selectAll('path')
-                .attrTween('d', d => () => arc(d));
-
-            updateBreadcrumb(d);
-            updateDetailedView(d);
-        }
-
-        function mouseover(event, d) {
-            d3.select(this).style('opacity', 1);
-
-            d3.select('.tooltip')
-                .style('opacity', 0.9)
-                .html(generateTooltipContent(d))
-                .style('left', (event.pageX) + 'px')
-                .style('top', (event.pageY - 28) + 'px');
-        }
-
-        function mouseout() {
-            d3.select(this).style('opacity', 0.7);
-            d3.select('.tooltip').style('opacity', 0);
-        }
-
-        function labelTransform(d) {
-            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-            const y = (d.y0 + d.y1) / 2;
-            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-        }
-
-        function initializeBreadcrumb() {
-            d3.select('#breadcrumb')
-                .append('ol')
-                .attr('class', 'breadcrumb');
-        }
-
-        function updateBreadcrumb(d) {
-            const breadcrumb = d3.select('.breadcrumb');
-            const data = d.ancestors().reverse().slice(1);
-
-            const items = breadcrumb.selectAll('li')
-                .data(data, d => d.data.name);
-
-            items.exit().remove();
-
-            items.enter()
-                .append('li')
-                .attr('class', 'breadcrumb-item')
-                .merge(items)
-                .html(d => d.data.name)
-                .on('click', (event, d) => clicked(event, d));
-        }
-
-        function generateTooltipContent(d) {
-            let content = `<strong>${d.data.name}</strong><br>`;
-            if (d.data.value !== undefined) {
-                content += `Value: ${d.data.value}<br>`;
-            }
-            content += `Depth: ${d.depth}`;
-            return content;
-        }
-
-        function updateDetailedView(d) {
-            const detailView = d3.select('#detailedView');
-            detailView.html('');
-
-            detailView.append('h2')
-                .text(d.data.name);
-
-            const content = detailView.append('div');
-
-            if (d.depth === 0) {
-                content.append('p')
-                    .text(`Total Fassungen: ${d.children.length}`);
-            } else if (d.depth === 1) {
-                content.append('p')
-                    .text(`Total attributes: ${d.children ? d.children.length : 0}`);
-            } else {
-                for (let [key, value] of Object.entries(d.data)) {
-                    if (key !== 'name' && key !== 'children') {
-                        content.append('p')
-                            .text(`${key}: ${value}`);
-                    }
-                }
-            }
-        }
-
-        function displayErrorMessage(message) {
-            d3.select('body').append('div')
-                .attr('class', 'error-message')
-                .style('background-color', 'red')
-                .style('color', 'white')
-                .style('padding', '10px')
-                .style('position', 'fixed')
-                .style('top', '10px')
-                .style('right', '10px')
-                .style('border-radius', '5px')
-                .text(message);
-        }
-
-        function applyFilters() {
-            // Implement filtering logic here
-            console.log('Filters applied');
-        }
-
-        function exportData() {
-            // Implement data export logic here
-            console.log('Data exported');
-        }
-    </script>
+    <script src="js/fassung-comparison-tool.js"></script>
 </body>
 </html>
