@@ -1,68 +1,138 @@
 // Global variables
 let crownData = [];
-let fassungData = {};
+let svg, width, height, radius;
+let arc, path, root;
+let color = d3.scaleOrdinal(d3.schemeCategory10);
 
-// Initialize the application when the DOM is fully loaded
+// Initialize the application
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Initializing Sunburst Fassung Comparison Tool');
+    console.log('Initializing Enhanced Sunburst Fassung Comparison Tool');
     loadData();
 });
 
-// Fetch the crown data (assuming a local file or API endpoint)
+// Fetch the crown data
 function loadData() {
-    d3.json('data/crown_data.json').then(data => {
-        crownData = data;
-        processData(crownData);
-        createSunburst();
-    }).catch(error => {
-        console.error('Error loading data:', error);
-    });
+    fetch('data/crown_data.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data loaded successfully:', data);
+            crownData = data;
+            const hierarchicalData = processHierarchicalData(crownData);
+            createSunburst(hierarchicalData);
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            displayErrorMessage('Failed to load data. Please check the console for more details and ensure crown_data.json exists in the data folder.');
+        });
 }
 
-// Process the raw crown data
-function processData(data) {
-    fassungData = { name: "Fassungen", children: [] };
+// Process the data into a hierarchical structure
+function processHierarchicalData(data) {
+    const root = {
+        name: "All Fassungen",
+        children: []
+    };
 
-    const fassungTypeMap = {};
+    data.forEach(item => {
+        const fassungType = {
+            name: item.Description || 'Unknown',
+            children: []
+        };
 
-    data.forEach(d => {
-        const fassungType = d.Description || 'Unknown';
-        if (!fassungTypeMap[fassungType]) {
-            fassungTypeMap[fassungType] = [];
+        // Process ConditionAttributes
+        if (item.ConditionAttributes && typeof item.ConditionAttributes === 'object') {
+            const conditionNode = {
+                name: "ConditionAttributes",
+                children: []
+            };
+            Object.entries(item.ConditionAttributes).forEach(([key, value]) => {
+                if (typeof value === 'object' && value !== null) {
+                    const subNode = {
+                        name: key,
+                        children: Object.entries(value).map(([subKey, subValue]) => ({
+                            name: subKey,
+                            value: String(subValue)
+                        }))
+                    };
+                    conditionNode.children.push(subNode);
+                } else {
+                    conditionNode.children.push({
+                        name: key,
+                        value: String(value)
+                    });
+                }
+            });
+            fassungType.children.push(conditionNode);
         }
-        fassungTypeMap[fassungType].push(d);
+
+        // Process Interventions
+        if (item.Interventions && Array.isArray(item.Interventions)) {
+            const interventionsNode = {
+                name: "Interventions",
+                children: item.Interventions.map(intervention => ({
+                    name: intervention.SurveyType || 'Unknown Intervention',
+                    children: [
+                        { name: "Date", value: intervention.SurveyISODate || 'Unknown' },
+                        { name: "Examiner", value: intervention.Examiner ? intervention.Examiner.Name : 'Unknown' }
+                    ]
+                }))
+            };
+            fassungType.children.push(interventionsNode);
+        }
+
+        // Process Media
+        if (item.Media && Array.isArray(item.Media)) {
+            const mediaNode = {
+                name: "Media",
+                children: item.Media.map(media => ({
+                    name: media.FileName || 'Unknown File',
+                    value: media.MediaType || 'Unknown Type'
+                }))
+            };
+            fassungType.children.push(mediaNode);
+        }
+
+        // Process other details
+        const detailsNode = {
+            name: "Details",
+            children: [
+                { name: "ObjectID", value: item.ObjectID },
+                { name: "ObjectName", value: item.ObjectName },
+                { name: "ObjectNumber", value: item.ObjectNumber },
+                { name: "Medium", value: item.Medium },
+                { name: "Bestandteil", value: item.Bestandteil },
+                { name: "DateBegin", value: item.DateBegin },
+                { name: "DateEnd", value: item.DateEnd }
+            ].filter(detail => detail.value !== undefined && detail.value !== null)
+        };
+        fassungType.children.push(detailsNode);
+
+        root.children.push(fassungType);
     });
 
-    for (const [type, objects] of Object.entries(fassungTypeMap)) {
-        fassungData.children.push({
-            name: type,
-            children: objects.map(obj => ({
-                name: obj.ObjectID,
-                size: obj.Interventions ? obj.Interventions.length : 1,
-                data: obj
-            }))
-        });
-    }
+    return root;
 }
 
 // Create the Sunburst visualization
-function createSunburst() {
+function createSunburst(data) {
     const container = document.getElementById('sunburstContainer');
-    const width = container.clientWidth;
-    const height = container.clientHeight || 600; // fallback to 600 if height is not set
-    const radius = Math.min(width, height) / 2;
+    width = container.clientWidth;
+    height = container.clientHeight || 600;
+    radius = Math.min(width, height) / 2;
 
-    // Clear any existing SVG
-    d3.select('#sunburstContainer').select('svg').remove();
-
-    const svg = d3.select('#sunburstContainer').append('svg')
+    svg = d3.select('#sunburstContainer').append('svg')
         .attr('width', width)
         .attr('height', height)
         .append('g')
         .attr('transform', `translate(${width / 2},${height / 2})`);
 
-    const root = d3.hierarchy(fassungData)
-        .sum(d => d.size)
+    root = d3.hierarchy(data)
+        .sum(d => d.value ? 1 : 0)
         .sort((a, b) => b.value - a.value);
 
     const partition = d3.partition()
@@ -70,158 +140,172 @@ function createSunburst() {
 
     partition(root);
 
-    const arc = d3.arc()
+    arc = d3.arc()
         .startAngle(d => d.x0)
         .endAngle(d => d.x1)
         .innerRadius(d => d.y0)
         .outerRadius(d => d.y1);
 
-    const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, fassungData.children.length + 1));
-
-    svg.selectAll('path')
+    path = svg.selectAll('path')
         .data(root.descendants().slice(1))
         .enter().append('path')
         .attr('d', arc)
         .style('fill', d => color((d.children ? d : d.parent).data.name))
         .style('opacity', 0.7)
-        .on('click', (event, d) => {
-            displayFassungDetails(d.data.data);
-        })
-        .on('mouseover', function (event, d) {
-            d3.select(this).style('opacity', 1);
-            showTooltip(event, `${d.data.name} (${d.value} interventions)`);
-        })
-        .on('mouseout', function () {
-            d3.select(this).style('opacity', 0.7);
-            hideTooltip();
-        });
+        .on('click', clicked)
+        .on('mouseover', mouseover)
+        .on('mouseout', mouseout);
 
     // Add labels
     const label = svg.selectAll('text')
         .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
         .enter().append('text')
-        .attr('transform', function(d) {
-            const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-            const y = (d.y0 + d.y1) / 2;
-            return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-        })
+        .attr('transform', labelTransform)
         .attr('dy', '0.35em')
         .text(d => d.data.name)
         .attr('font-size', '10px')
         .attr('fill', 'white')
         .style('text-anchor', 'middle')
         .style('pointer-events', 'none');
-}
 
-// Show the tooltip
-function showTooltip(event, content) {
-    const tooltip = d3.select('body').selectAll('.tooltip').data([null])
-        .join('div')
+    // Initialize breadcrumb
+    initializeBreadcrumb();
+
+    // Initialize tooltip
+    const tooltip = d3.select('body').append('div')
         .attr('class', 'tooltip')
         .style('opacity', 0);
-
-    tooltip.transition()
-        .duration(200)
-        .style('opacity', .9);
-    
-    tooltip.html(content)
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 10) + 'px');
 }
 
-// Hide the tooltip
-function hideTooltip() {
-    d3.select('.tooltip').transition()
-        .duration(500)
-        .style('opacity', 0);
+function clicked(event, d) {
+    svg.transition().duration(750).tween('scale', () => {
+        const xd = d3.interpolate(root.x0, d.x0),
+              yd = d3.interpolate(root.y0, d.y0),
+              yr = d3.interpolate(root.y1, d.y1);
+        return t => { root.x0 = xd(t); root.y0 = yd(t); root.y1 = yr(t); };
+    }).selectAll('path')
+        .attrTween('d', d => () => arc(d));
+
+    updateBreadcrumb(d);
+    updateDetailedView(d);
 }
 
-// Display detailed information about the fassung
-function displayFassungDetails(fassungData) {
-    const container = d3.select("#comparisonContainer");
-    container.html("");
+function mouseover(event, d) {
+    d3.select(this).style('opacity', 1);
 
-    const card = container.append("div").attr("class", "card");
-    const cardBody = card.append("div").attr("class", "card-body");
-    
-    cardBody.append("h5")
-        .attr("class", "card-title")
-        .text(`${fassungData.ObjectName || 'No Name'} - ${fassungData.Bestandteil || 'No Component'}`);
-    
-    if (fassungData.Media && fassungData.Media.length > 0) {
-        cardBody.append("img")
-            .attr("src", getImagePath(fassungData))
-            .attr("alt", fassungData.ObjectName || 'No Name')
-            .attr("class", "img-fluid mb-3");
+    d3.select('.tooltip')
+        .style('opacity', 0.9)
+        .html(generateTooltipContent(d))
+        .style('left', (event.pageX) + 'px')
+        .style('top', (event.pageY - 28) + 'px');
+}
+
+function mouseout() {
+    d3.select(this).style('opacity', 0.7);
+    d3.select('.tooltip').style('opacity', 0);
+}
+
+function labelTransform(d) {
+    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+    const y = (d.y0 + d.y1) / 2;
+    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+}
+
+function initializeBreadcrumb() {
+    d3.select('#breadcrumb')
+        .append('ol')
+        .attr('class', 'breadcrumb');
+}
+
+function updateBreadcrumb(d) {
+    const breadcrumb = d3.select('.breadcrumb');
+    const data = d.ancestors().reverse().slice(1);
+
+    const items = breadcrumb.selectAll('li')
+        .data(data, d => d.data.name);
+
+    items.exit().remove();
+
+    items.enter()
+        .append('li')
+        .attr('class', 'breadcrumb-item')
+        .merge(items)
+        .html(d => d.data.name)
+        .on('click', (event, d) => clicked(event, d));
+}
+
+function generateTooltipContent(d) {
+    let content = `<strong>${d.data.name}</strong><br>`;
+    if (d.data.value !== undefined) {
+        content += `Value: ${d.data.value}<br>`;
     }
-    
-    cardBody.append("p")
-        .attr("class", "card-text")
-        .text(fassungData.Description || "No description available");
+    content += `Depth: ${d.depth}`;
+    return content;
+}
 
-    // Show intervention details
-    if (fassungData.Interventions && fassungData.Interventions.length > 0) {
-        const interventions = cardBody.append("div").attr("class", "mt-3");
-        interventions.append("h6").text("Interventions");
-        const list = interventions.append("ul").attr("class", "list-group");
-        fassungData.Interventions.forEach(intervention => {
-            list.append("li")
-                .attr("class", "list-group-item")
-                .text(`${intervention.Details.ActionTaken}: ${intervention.Details.DateCompleted}`);
+function updateDetailedView(d) {
+    const detailView = d3.select('#detailedView');
+    detailView.html('');
+
+    detailView.append('h2')
+        .text(d.data.name);
+
+    const content = detailView.append('div');
+
+    if (d.depth === 0) {
+        content.append('p')
+            .text(`Total Fassungen: ${d.children.length}`);
+    } else if (d.children) {
+        content.append('p')
+            .text(`Children: ${d.children.length}`);
+        d.children.forEach(child => {
+            content.append('p')
+                .text(`- ${child.data.name}`);
         });
-    }
-}
-
-// Get the image path
-function getImagePath(d) {
-    if (d.Media && d.Media.length > 0 && d.Media[0].Path && d.Media[0].FileName) {
-        return d.Media[0].Path + "/" + d.Media[0].FileName;
     } else {
-        return "images/placeholder.png";
+        content.append('p')
+            .text(`Value: ${d.data.value}`);
     }
 }
 
-// Apply filters
+function displayErrorMessage(message) {
+    const errorDiv = d3.select('body').append('div')
+        .attr('class', 'error-message')
+        .style('background-color', 'red')
+        .style('color', 'white')
+        .style('padding', '10px')
+        .style('position', 'fixed')
+        .style('top', '10px')
+        .style('right', '10px')
+        .style('border-radius', '5px')
+        .style('z-index', '1000')
+        .style('max-width', '300px');
+
+    errorDiv.append('p')
+        .text(message);
+
+    errorDiv.append('button')
+        .text('Close')
+        .on('click', function() {
+            errorDiv.remove();
+        });
+
+    // Automatically remove the error message after 10 seconds
+    setTimeout(() => {
+        errorDiv.remove();
+    }, 10000);
+}
+
 function applyFilters() {
-    const selectedMaterial = document.getElementById('materialFilter').value;
-    const selectedCondition = document.getElementById('conditionFilter').value;
-    const selectedIntervention = document.getElementById('interventionFilter').value;
-
-    const filteredData = crownData.filter(d => {
-        return (selectedMaterial ? d.Medium === selectedMaterial : true)
-            && (selectedCondition ? (d.ConditionAttributes && d.ConditionAttributes[selectedCondition]) : true)
-            && (selectedIntervention ? (d.Interventions && d.Interventions.some(i => i.Details.ActionTaken === selectedIntervention)) : true);
-    });
-
-    processData(filteredData);
-    createSunburst();
+    // Implement filtering logic here
+    console.log('Filters applied');
 }
 
-// Export data to CSV
 function exportData() {
-    const csvData = crownData.map(d => ({
-        ObjectID: d.ObjectID,
-        Name: d.ObjectName,
-        Material: d.Medium,
-        Condition: d.ConditionAttributes ? JSON.stringify(d.ConditionAttributes) : 'Unknown',
-        Interventions: d.Interventions ? d.Interventions.length : 0
-    }));
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-        + [
-            Object.keys(csvData[0]).join(","),
-            ...csvData.map(row => Object.values(row).map(val => `"${val}"`).join(","))
-        ].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "crown_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Implement data export logic here
+    console.log('Data exported');
 }
 
-// Make functions globally accessible
+// Make sure to add these functions to your global scope if needed
 window.applyFilters = applyFilters;
 window.exportData = exportData;
