@@ -127,22 +127,61 @@ document.addEventListener('DOMContentLoaded', () => {
     // Render Pagination
     function renderPagination() {
         const totalPages = Math.ceil(filteredObjects.length / itemsPerPage);
-        paginationContainer.innerHTML = `
-            <ul class="pagination justify-content-center">
-                ${Array.from({length: totalPages}, (_, i) => 
-                    `<li class="page-item ${currentPage === i + 1 ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i + 1}">${i + 1}</a>
-                    </li>`
-                ).join('')}
-            </ul>
-        `;
+        let html = '<ul class="pagination justify-content-center">';
 
-        paginationContainer.addEventListener('click', (e) => {
-            if (e.target.tagName === 'A') {
+        // First page
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="1">First</a>
+                 </li>`;
+
+        // Previous button
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+                 </li>`;
+
+        // Page numbers
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, startPage + 4);
+
+        if (startPage > 1) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `<li class="page-item ${currentPage === i ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                     </li>`;
+        }
+
+        if (endPage < totalPages) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+
+        // Next button
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+                 </li>`;
+
+        // Last page
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" data-page="${totalPages}">Last</a>
+                 </li>`;
+
+        html += '</ul>';
+        html += `<p class="text-center mt-2">Page ${currentPage} of ${totalPages}</p>`;
+
+        paginationContainer.innerHTML = html;
+
+        // Add event listeners
+        paginationContainer.querySelectorAll('.page-link').forEach(link => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
-                currentPage = parseInt(e.target.dataset.page);
-                renderObjectList();
-            }
+                const page = parseInt(e.target.dataset.page);
+                if (!isNaN(page) && page !== currentPage && page > 0 && page <= totalPages) {
+                    currentPage = page;
+                    renderObjectList();
+                }
+            });
         });
     }
 
@@ -154,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Construct the final path
             return `https://storage.googleapis.com/crown-dashboard/assets/${cleanedPath}`;
         } else {
-            return "images/placeholder.png";
+            return null;
         }
     }
 
@@ -246,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = '<h6>Intervention Media:</h6><div class="row">';
         intervention.Media.forEach(media => {
             const imagePath = getImagePath({ Media: [media] });
-            if (imagePath !== "images/placeholder.png") {
+            if (imagePath) {
                 html += `
                     <div class="col-md-3 mb-3">
                         <img src="${imagePath}" class="img-fluid img-thumbnail" alt="${media.RenditionNumber || 'Media'}">
@@ -267,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let html = '<div class="row">';
         mediaArray.forEach(media => {
             const imagePath = getImagePath({ Media: [media] });
-            if (imagePath !== "images/placeholder.png") {
+            if (imagePath) {
                 html += `
                     <div class="col-md-3 mb-3">
                         <img src="${imagePath}" class="img-fluid img-thumbnail" alt="${media.RenditionNumber || 'Media'}">
